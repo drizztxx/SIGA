@@ -1,4 +1,4 @@
-simul.Cox <- function(n,exp,weib.shape,weib.scale,censor.rate=NULL,extra.noise=0,seed=123){
+simul.Cox <- function(n,exp,weib.shape,weib.scale,censor.par=NULL,extra.noise=0,seed=123){
   library(mvtnorm)
   exp<-str2expression(exp)
   set.seed(seed)
@@ -15,9 +15,6 @@ simul.Cox <- function(n,exp,weib.shape,weib.scale,censor.rate=NULL,extra.noise=0
   x7<-x[,1];x8<-x[,2];x9 <- x[,3];x10<-x[,4]
   z<-rbinom(n,1,0.5)
   u<-runif(n,0,1)
-  if (!is.null(censor.rate)) 
-    event <- rbinom(n,1,1-censor.rate)
-  else event <- rep(1,n)
   if (extra.noise){
     if (extra.noise %% 10) stop(sprintf("extra noise %s should be divisible by 10",extra.noise))
     stks <- extra.noise/10
@@ -32,6 +29,10 @@ simul.Cox <- function(n,exp,weib.shape,weib.scale,censor.rate=NULL,extra.noise=0
   }
   RR <- exp(eval(exp))
   Ts <- weib.scale*(-1*log(u)*RR)^(1/weib.shape)
+  if (!is.null(censor.par)) {
+    Tc <- runif(n,0,censor.par)
+    event <- ifelse(Tc > Ts, 1, 0)
+  } else event <- rep(1,n)
   if (!extra.noise)
     data <- data.frame(Ts=Ts,event=event,z=z,x1=x1,x2=x2,x3=x3,x4=x4,x5=x5,
                        x6=x6,x7=x7,x8=x8,x9=x9,x10=x10)
