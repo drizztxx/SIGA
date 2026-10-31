@@ -1,0 +1,365 @@
+```{r validation-setup, include = FALSE}
+vroot <- file.path("..", "validation")
+source(file.path(vroot, "R", "report_helpers.R"))
+res_dir <- file.path(vroot, "results")
+rd <- function(f) { p <- file.path(res_dir, f); if (file.exists(p)) readRDS(p) else NULL }
+v2 <- rd("01_component_equivalence.rds")
+v3 <- rd("02_ga_comparison.rds")
+v3b <- rd("02b_siga_comparison.rds")
+v4 <- rd("03_radiant_case_study.rds")
+v5 <- rd("04_simulation_tte.rds")
+v6b <- rd("04_simulation_binary.rds")
+v6c <- rd("04_simulation_continuous.rds")
+rn5 <- rd("04_resample_number_tte_q100_bernoulli_legacydata.rds")
+rn1 <- rd("04_resample_number_tte_s1_q100_legacydata.rds")
+kt <- function(x, ...) knitr::kable(x, row.names = FALSE, ...)
+ag5 <- if (!is.null(v5)) agreement(v5$summary)
+agv <- function(m, what) ag5[[what]][ag5$metric == m]
+sval <- function(s, metric, model, n, eta = 0.2, theta = 0.5, what = "value")
+  s[[what]][s$metric == metric & s$model == model & s$n == n & s$eta == eta & s$theta == theta]
+```
+
+# Validation
+
+The package was validated in six steps. The scripts are in the `validation/`
+directory of the source repository. Published values are given in
+parentheses.
+
+## V1: unit tests
+
+The test suite (`tests/testthat`, run by `R CMD check`) checks, among others,
+that the subgroup decoding is correct for every predictor type including the
+cases that failed in the original code, that the fast model fitters reproduce
+`coxph()`, `glm()` and `lm()`, that the prescreening reproduces `anova()`,
+that `update()` gives the same result as a new fit, that results are
+identical with one and two cores, and that `siga_simulate(legacy = TRUE)`
+reproduces the original simulation program.
+
+## V2: equivalence with the original code
+
+```{r, echo = FALSE}
+if (!is.null(v2)) kt(data.frame(Check = names(v2),
+                               Result = ifelse(vapply(v2, `[[`, TRUE, "ok"), "pass", "FAIL"),
+                               Detail = vapply(v2, `[[`, "", "detail")))
+```
+
+The genetic algorithm of the package reproduces the original implementation
+exactly: with the same random seed and objective values, the best objective
+value of each of 50 generations is identical for 5 seeds (check d).
+
+## V3: comparison with the original code
+
+**One genetic algorithm run.** On 50 simulated B3 datasets ($n = 300$,
+original simulation program) one single-population genetic algorithm run of
+the original `SIGA.tte()` and of the package were applied to the same 10
+prescreened candidates. Both best subgroups were scored with the same
+criterion, the one-sided interaction p-value. The searches reach similar
+objective values. Both are lower than that of the true subgroup, which
+illustrates why a single search overfits and the resampling scheme is needed.
+The package finds subgroups defined by the true biomarkers $x_4$ and $x_5$
+more often, because subgroups with a single binary condition such as
+$x_5 = 1$ were unreachable in the original code. It is about 35 times faster.
+
+```{r, echo = FALSE}
+if (!is.null(v3)) kt(data.frame(
+  Quantity = c("datasets", "median log10 p of best subgroup", "best subgroup contains x4 and x5",
+               "best subgroup uses exactly x4 and x5", "mean time per run (s)"),
+  Original = c(nrow(v3), f3(median(log10(v3$p_old)), 2), sum(v3$all_old), sum(v3$exact_old),
+               f3(mean(v3$time_old), 1)),
+  Package = c(nrow(v3), f3(median(log10(v3$p_new)), 2), sum(v3$all_new), sum(v3$exact_new),
+              f3(mean(v3$time_new), 2))))
+```
+
+**The complete procedure.** The original `SIGA()` function and `siga()` were
+applied with the same settings (5 sub-populations and 10 resamples with
+Bernoulli sampling, $\eta = 0.2$, $\theta = 0.5$) to the same datasets of
+models B1 ($n = 300$) and B4 ($n = 600$) generated with the original
+simulation program (script `02b_siga_comparison.R`).
+
+```{r, echo = FALSE}
+if (!is.null(v3b)) {
+  a <- v3b$summary
+  kt(data.frame(Model = a$model, Code = a$method, Datasets = a$datasets,
+                `Subgroup found` = f3(a$found, 2), `Same decision` = f3(a$same_decision, 2),
+                `Held-out / overall HR` = f3(a$test_over_overall, 2),
+                `Variables per rule` = f3(a$vars_per_rule, 2),
+                `Lowest frequency, predictive` = f3(a$min_freq_predictive, 2),
+                `Highest frequency, noise` = f3(a$max_freq_noise, 2),
+                `Final rule: all predictive` = f3(a$all, 2),
+                `Final rule: exactly the predictive` = f3(a$exact, 2), check.names = FALSE),
+     caption = paste("Original code versus package on the same datasets: proportion of datasets with a",
+                     "subgroup and with the same decision as the other code; means over the datasets of the",
+                     "held-out / overall hazard ratio and the number of variables of the resampled",
+                     "subgroups, of the lowest selection frequency of a predictive biomarker and the",
+                     "highest of a noise variable; proportion of datasets whose final rule uses all /",
+                     "exactly the predictive biomarkers"))
+}
+```
+
+The two codes make the same decision (subgroup or no subgroup) in 31 of the
+32 datasets. They give similar held-out hazard ratios, numbers of variables
+per rule and selection frequencies, and both final rules contain $x_4$ in 22
+of the 24 B1 datasets. In this run the final rule of the package contained an
+additional noise variable more often (exactly $x_4$: 11 versus 17 datasets;
+7 versus 1 discordant datasets, exact binomial $p = 0.07$). This is resampling
+variation. With three further seeds on the same datasets the package's final
+rule is exactly $x_4$ in 69% of the runs (71%, 71% and 67% for the three
+seeds), about the same as the original code (71%). In B4 both codes often miss
+one of the three biomarkers.
+
+## V4: RADIANT case study
+
+The case study of the paper (973 patients, 21 predictors, disease-free
+survival) was repeated with the settings of the paper ($k = 10$, $q = 100$,
+$\eta = 0.25$, $\theta = 0.7$) and three seeds: with the package defaults
+otherwise (`default`: five sub-populations per resample, exactly 63.2% of the
+patients), with the sampling of the original code (`bernoulli`) and with one
+sub-population per resample as described in the paper (`one_subpop`).
+`default_q10` uses the package defaults including $q = 10$ (ten seeds). The
+RADIANT data are not part of the package.
+
+```{r, echo = FALSE}
+if (!is.null(v4)) kt(v4$original, caption = "Original code (stored result)", digits = 3)
+```
+
+```{r, echo = FALSE}
+if (!is.null(v4)) kt(v4$runs[c("config", "seed", "n_resample", "mean_test_hr", "freq_ihc_prop",
+                               "freq_ihc_intense", "subgroup", "subgroup_eta0.2_theta0.5")], digits = 3,
+                     caption = paste("SIGA package: mean test-set hazard ratio, selection frequencies of",
+                                     "EGFR_IHC_PROP and EGFR_IHC_INTENSE, subgroup with eta = 0.25 /",
+                                     "theta = 0.7 and with eta = 0.2 / theta = 0.5"))
+```
+
+The overall hazard ratio is 0.945, as in the original analysis. That analysis
+is itself borderline: in its stored result EGFR_IHC_INTENSE is used by exactly
+70 of the 100 resampled subgroups (EGFR_IHC_PROP by 85), so $\theta = 0.7$ is
+just reached. With $q = 100$ and five sub-populations per resample the
+package gives similar mean test-set hazard ratios (0.67 to 0.71; original 0.70) and
+selection frequencies (EGFR_IHC_PROP 0.80 to 0.85, EGFR_IHC_INTENSE 0.65 to
+0.73), so whether EGFR_IHC_INTENSE reaches 70% depends on the seed. With the
+defaults the final rule is the published one (hazard ratio 0.51 in the
+subgroup) for two of the three seeds and EGFR_IHC_PROP $\le 25$ (0.55) for
+the third. With the sampling of the original code EGFR_IHC_INTENSE stays at
+65% to 68%. For seed 1 the mean test-set hazard ratio (0.711) is also just
+above the threshold $(1 - 0.25) \times 0.945 = 0.709$. With one
+sub-population per resample neither biomarker reaches 70% (55% to 67%), so no
+subgroup is found, as expected from V5. With $\eta = 0.2$ and $\theta = 0.5$
+all nine runs with $q = 100$ give the published subgroup.
+
+With $q = 10$ the mean test-set hazard ratio varies between 0.53 and 0.81
+over the ten seeds. At $\eta = 0.25$ and $\theta = 0.7$ five seeds give a
+subgroup, the published one twice. At $\eta = 0.2$ and $\theta = 0.5$ eight
+do. All eight contain EGFR_IHC_INTENSE $\le 1$ and EGFR_IHC_PROP $\le 60$ or
+70, and three have no further conditions.
+
+## V5: simulation study of the paper
+
+The simulation study of section 3 of the paper was repeated with the package
+defaults (10 resamples with five sub-populations each, exactly 63.2% of the
+patients per resample) and the settings of the paper otherwise ($k = 10$,
+$m = 50$, $MaxG = 50$, $s = 5$, $GGAP = 0.9$, $MinS = 10\%$), with 100 trials
+per scenario (the paper used 1000). The observed time is $\min(T, C)$, as
+described in the paper. In every trial the nine combinations of $\eta$ and
+$\theta$ are evaluated from the same resampling with `update()`.
+
+```{r, echo = FALSE}
+if (!is.null(ag5)) kt(data.frame(Metric = ag5$metric, Cells = ag5$cells, Package = f3(ag5$package),
+                                 Paper = f3(ag5$paper), `Within 2 SE` = ag5$within_2se, check.names = FALSE),
+                      caption = paste("Agreement with Tables 3 to 6 of the paper: means over the cells and",
+                                      "number of cells within two Monte Carlo standard errors"))
+```
+
+The false discovery rates agree with Table 3 of the paper: 35 of the 36 cells
+are within two Monte Carlo standard errors. At $\theta = 0.5$, averaged over
+the four null scenarios, they are 0.087, 0.058 and 0.028 for $\eta = 0.15$,
+0.2 and 0.25 (paper 0.109, 0.061 and 0.032), and they decrease with $\theta$
+as in the paper. When a subgroup is found, it uses at least one predictive
+biomarker in 97% of the trials (paper 99.7%). Its hazard ratio in the test set
+$L_2$ agrees with the paper (0.32 versus 0.33 on average), and sensitivity,
+specificity and AUC are similar on average (AUC 0.90 versus 0.89). The final
+rules contain a noise variable more often (`p_exact`). They also miss a
+predictive biomarker of models B3 and B4 more often (`p_all`), and their hazard
+ratios in the training set $L_1$ are lower than published. These differences
+are discussed at the end of this section.
+
+```{r, echo = FALSE}
+if (!is.null(v5)) kt(table3(v5$summary),
+                     caption = "False subgroup discovery rates (Table 3), package (paper)")
+```
+
+```{r, echo = FALSE}
+if (!is.null(v5)) kt(table_discovery(v5$summary),
+                     caption = "Subgroup discovery rates in models B1 to B4 (not reported in the paper)")
+```
+
+```{r, echo = FALSE, results = "asis"}
+if (!is.null(v5)) for (n in c(300, 600)) {
+  print(kt(table_metrics(v5$summary, c("p_one", "p_all", "p_exact"), n),
+           caption = sprintf("Probability of selecting the predictive biomarkers (Table 4), n = %d, package (paper)", n)))
+  cat("\n\n")
+}
+```
+
+```{r, echo = FALSE, results = "asis"}
+if (!is.null(v5)) for (n in c(300, 600)) {
+  print(kt(table_metrics(v5$summary, c("se", "sp", "auc"), n, d = 2),
+           caption = sprintf("Sensitivity, specificity and AUC (Table 5), n = %d, package (paper)", n)))
+  cat("\n\n")
+  print(kt(table_metrics(v5$summary, c("prop_L2", "est_L1", "est_L2", "rel_bias"), n, d = 2),
+           caption = sprintf("Subgroup proportion and hazard ratios in L1 and L2 (Table 6), n = %d, package (paper)", n)))
+  cat("\n\n")
+}
+```
+
+### Resampling settings and data generation
+
+The agreement with the paper depends on the resampling settings and on how the
+data are generated. The following runs used the same datasets (seeds) as far
+as the data generator is the same.
+
+```{r, echo = FALSE}
+cfg <- c(tte = "package defaults: s = 5, q = 10, exact; min(T, C)",
+         tte_bernoulli = "s = 5, q = 10, Bernoulli; min(T, C)",
+         tte_bernoulli_legacydata = "s = 5, q = 10, Bernoulli; original program",
+         tte_s1_legacydata = "s = 1, q = 10, exact; original program",
+         tte_s1_q100_legacydata = "s = 1, q = 100, exact; original program")
+ct <- config_table(cfg, res_dir)
+if (!is.null(ct)) kt(ct, caption = paste(
+  "Resampling settings (s sub-populations per resample, q resamples, exact or Bernoulli sampling)",
+  "and data generator: trials per scenario, means over the cells of Tables 3 to 6 (in brackets the",
+  "share of cells within two Monte Carlo standard errors of the paper) and discovery rates at",
+  "eta = 0.2, theta = 0.5 / 0.9"))
+```
+
+Exact and Bernoulli sampling give similar results, and so do the two data
+generators (first three rows; runs with 50 trials per scenario have larger
+Monte Carlo errors). One sub-population per resample, as described in the
+paper, finds the subgroups less often. B1 ($n = 300$) is then found in 68% of
+the trials at $\theta = 0.5$ and in 9% at $\theta = 0.9$, against 88% and 76%
+with five sub-populations. A single search in a resample more often ends at a
+poor subgroup, so the predictive biomarkers are selected in fewer resamples.
+With $q = 100$ resamples (last row) false discoveries are rare (0.3%) and
+almost no subgroup is found at $\theta = 0.9$ (next section).
+
+### Number of resamples
+
+The paper recommends $q = 100$ resamples, whereas the original `SIGA()`
+function used 10 by default. Runs with $q = 100$ that store all resamples
+show which decisions fewer resamples would have given: the first $q$
+resamples are exactly those of a run with `n_resample = q` and the same seed,
+and averaging over random subsets of $q$ resamples gives the expected rate.
+
+```{r, echo = FALSE}
+if (!is.null(rn5)) {
+  x <- rn5[rn5$theta == 0.5 & rn5$n == 300, ]
+  w <- reshape(x[c("model", "eta", "q", "random")], idvar = c("model", "eta"), timevar = "q",
+               direction = "wide")
+  w <- w[order(w$model, w$eta), ]
+  kt(data.frame(Model = w$model, eta = w$eta, `q = 10` = f3(w$random.10), `q = 20` = f3(w$random.20),
+                `q = 50` = f3(w$random.50), `q = 100` = f3(w$random.100), check.names = FALSE),
+     caption = paste("Expected false discovery rate with q resamples, theta = 0.5, n = 300 (50 datasets",
+                     "per model; 5 sub-populations, Bernoulli sampling, original simulation program).",
+                     "Paper (eta = 0.15 / 0.2 / 0.25): A1 0.094 / 0.059 / 0.036, A2 0.099 / 0.060 / 0.034"))
+}
+```
+
+Under the null hypothesis the held-out hazard ratio of a subgroup found in a
+resample is on average higher than the overall hazard ratio, because the
+subgroup was selected in the training part. In the V5 trials it is 18% to 21%
+higher for $n = 300$ and 8% to 9% higher for $n = 600$. A false discovery
+therefore requires the mean of the $q$ held-out ratios to be low by chance,
+which becomes unlikely for large $q$. With $q = 10$ the expected false
+discovery rates of A1 are close to the published ones (0.101, 0.060 and 0.030
+for $\eta = 0.15$, 0.2 and 0.25). Those of A2 are lower on data from the
+original simulation program but agree with the paper under proper censoring
+(Table 3 above). With $q = 100$ the rates are 0 for $\eta \ge 0.15$. To keep
+the false discovery rate near 5% with $q = 100$, $\eta$ must be about 0.05 to
+0.10: the rates are then 0.06 and 0.02 for A1 and 0.02 and 0 for A2. The
+defaults ($q = 10$, $\eta = 0.2$) correspond to the calibration of the
+published simulations. With only 10 resamples the decision depends on the
+random resamples, so a borderline result should be repeated with a few seeds.
+
+### Differences from the published results
+
+* **Noise variables in the final rule.** At $\theta = 0.5$ the final rule
+  more often contains a noise variable besides the predictive biomarkers
+  (B1, $n = 300$: `p_exact` 0.71 versus 0.99). With 10 resamples a noise
+  variable needs to appear in only 5 of them to be selected. At
+  $\theta = 0.7$ the final rules of B1 and B2 are exact in 93% of the trials.
+  On the same data the original code also selects noise variables (V3: the
+  final rule is exactly $x_4$ in 17 of the 22 B1 datasets with a subgroup).
+* **Biomarkers of B3 and B4.** `p_all` is lower, mainly at
+  $\theta \ge 0.7$ (B4, $n = 600$, $\theta = 0.7$: 0.24 versus 0.68). One of
+  the biomarkers is often selected in fewer than 70% of the resamples. In B4
+  this is mostly $x_1$, whose condition $x_1 < 0.5$ excludes only 31% of the
+  patients; in B3 with $n = 300$ it is mostly the binary $x_5$. The original
+  code is equally low on the same data (V3).
+* **Subgroup size in B4, $n = 300$.** The published subgroups contain 64% of
+  the patients and have a hazard ratio of 0.59 in $L_2$. The package's contain
+  30% and have 0.37. For $n = 600$ the two are closer: 19% and 0.17 published,
+  24% and 0.26 with the package.
+* **Hazard ratio in the training set.** In $L_1$, the data in which the final
+  subgroup was found, its hazard ratio is lower than in $L_2$, as expected
+  after selection. The relative bias is −0.18 on average, and −0.43 for B3 with
+  $n = 300$. The published estimates in $L_1$ are close to those in $L_2$
+  (relative bias 0.02 on average). The estimates in $L_2$ agree with the
+  paper.
+
+## V6: binary and continuous endpoints
+
+The binary and continuous versions of the six models (`siga_simulate()`,
+section "Binary and continuous endpoints") were run with the package defaults
+and 100 trials per scenario. The paper has no results for these endpoints.
+
+```{r, echo = FALSE, results = "asis"}
+for (v in list(list(v6b, "binary"), list(v6c, "continuous"))) if (!is.null(v[[1]])) {
+  print(kt(table3(v[[1]]$summary, with_paper = FALSE),
+           caption = sprintf("False subgroup discovery rates, %s endpoint", v[[2]])))
+  cat("\n\n")
+  print(kt(table_discovery(v[[1]]$summary), caption = sprintf("Discovery rates, %s endpoint", v[[2]])))
+  cat("\n\n")
+  for (n in c(300, 600)) {
+    print(kt(table_metrics(v[[1]]$summary, c("p_one", "p_all", "p_exact"), n, with_paper = FALSE),
+             caption = sprintf("Probability of selecting the predictive biomarkers, %s endpoint, n = %d",
+                               v[[2]], n)))
+    cat("\n\n")
+  }
+}
+```
+
+With $\eta = 0.2$ and $\theta = 0.5$ the false discovery rate for continuous
+endpoints, averaged over the four null scenarios, is 0.055, as for
+time-to-event endpoints (0.058, V5). For binary endpoints it is 0.085 (Monte
+Carlo standard error 0.014), and a stricter $\theta$ removes few of these
+false discoveries: at $\theta = 0.7$ the rate is 0.077, against 0.028 for
+time-to-event and 0.037 for continuous endpoints. In 31 of the 34 binary null
+trials that passed the $\eta$ rule a predictor was selected in at least 70% of
+the resamples (time-to-event: 11 of 23). With $\eta = 0.25$ the binary rates
+are 0.058 and 0.052, about the rate of the defaults for time-to-event
+endpoints, so $\eta = 0.25$ is the default for binary endpoints.
+
+The subgroups are found less often than for time-to-event endpoints. B1 is
+found in 61% (binary) and 44% (continuous) of the trials with $n = 300$,
+against 88%. With $n = 600$ it is found in 90% and 87% (100%), and B2 to B4 in
+40% to 51% (binary) and 37% to 52% (continuous), against 81% to 84%. The
+linear predictors are the same for all endpoints, but a binary or continuous
+outcome carries less information on the treatment effect than an event time
+with 30% censoring: in the null trials the logarithms of the held-out ratios
+vary about twice as much (variance about 0.6 against 0.34 for $n = 300$).
+When a subgroup is found it uses a predictive biomarker in most trials (B1:
+95% to 100%). At $\theta = 0.7$ the final rule of B1 is exactly $x_4$ in 90%
+to 92% of the trials with a subgroup for both endpoints (time-to-event 94% to
+96%). The final rules of B3 and B4 contain all predictive biomarkers less
+often than for time-to-event endpoints (with $n = 600$ and $\theta = 0.5$:
+43% and 5% for binary, 46% and 22% for continuous, 79% and 48% for
+time-to-event endpoints).
+
+The treatment effect of the final subgroup in $L_1$, the data in which it was
+found, overestimates that in $L_2$ more than for time-to-event endpoints,
+particularly for odds ratios. In B1 with $n = 300$ the odds ratio is 14.0 in
+$L_1$ and 6.1 in $L_2$ (true value $e^2 = 7.4$ in the B1 subgroup), and the
+mean difference is 2.6 and 1.9 (true value 2). `siga_cv()` estimates the
+effect in new patients by cross-validation of the whole procedure. Earlier
+runs with one sub-population and 100 resamples (30 trials per scenario) found
+B1 in 20% and 70% of the binary trials, with almost no false discoveries, as
+for time-to-event endpoints (V5).

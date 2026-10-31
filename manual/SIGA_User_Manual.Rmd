@@ -1,0 +1,177 @@
+---
+title: "SIGA: Subgroup Identification Based on a Genetic Algorithm"
+subtitle: "User manual for the R package SIGA, version 0.1.0"
+author: "Liang Zhao"
+date: "`r format(Sys.Date(), '%d %B %Y')`"
+output:
+  word_document:
+    toc: true
+    toc_depth: 2
+    number_sections: true
+    fig_width: 6.5
+    fig_height: 4
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", fig.width = 6.5, fig.height = 4,
+                      dpi = 150)
+library(SIGA)
+vig_dir <- file.path("..", "vignettes")
+## Body of a vignette without its YAML header and set-up chunk.
+vignette_body <- function(file) {
+  x <- readLines(file.path(vig_dir, file), encoding = "UTF-8")
+  dashes <- which(x == "---")
+  x <- x[-seq_len(dashes[2])]
+  start <- grep("^```\\{r, include = FALSE\\}", x)
+  if (length(start)) {
+    end <- which(x == "```" & seq_along(x) > start[1])[1]
+    x <- x[-(start[1]:end)]
+  }
+  x <- x[!grepl("^library\\(SIGA\\)$", x)]
+  x <- sub("^(#+) [0-9]+\\. ", "\\1 ", x)   # the manual numbers sections itself
+  paste(x, collapse = "\n")
+}
+child <- function(file) {
+  cat(knitr::knit_child(text = vignette_body(file), quiet = TRUE, envir = globalenv()))
+}
+```
+
+# Introduction
+
+SIGA (*subgroup identification based on a genetic algorithm*) is a method for
+finding, in the data of a two-arm randomised clinical trial, a subgroup of
+patients defined by a combination of biomarker conditions in which the
+treatment effect is much larger than in the remaining patients. It was
+proposed for censored survival data by Zhao et al. (2024,
+*Journal of Biopharmaceutical Statistics* 34(1), 55–77,
+doi:10.1080/10543406.2023.2170397) and is extended in this package to binary
+and continuous endpoints.
+
+Compared with tree-based methods, which split the population one biomarker
+at a time, the genetic algorithm evaluates complete subgroup definitions, so
+that several biomarkers that are only predictive in combination can be found
+together. Because any search will find a "best" subgroup even in the absence
+of a real effect, SIGA embeds the search in a resampling scheme that controls
+
+* **multiplicity**: a subgroup is reported only if the subgroups found in
+  random training subsamples also improve the treatment effect in the held-out
+  patients by at least $100\eta\%$; and
+* **complexity**: only biomarkers that are selected in at least a proportion
+  $\theta$ of the resamples can define the subgroup.
+
+The package provides:
+
+* `siga()`, the complete procedure, with print, summary, plot and prediction
+  methods, and `update()` to change $\eta$ and $\theta$ without recomputation;
+* `siga_search()`, the genetic algorithm search on given biomarkers;
+* `siga_screen()`, the prescreening of candidate biomarkers;
+* `siga_cv()`, cross-validation of the complete procedure;
+* `subgroup_effect()`, the treatment effects in a subgroup, its complement and
+  the interaction, e.g. in validation data;
+* `siga_simulate()`, data from the simulation models of the SIGA paper.
+
+```{r flowchart, echo = FALSE, fig.height = 5.2, fig.cap = "The SIGA procedure."}
+op <- par(mar = c(0, 0, 0, 0))
+plot(c(0, 10), c(0, 11), type = "n", axes = FALSE, xlab = "", ylab = "")
+box_ <- function(x, y, label, w = 3.6, h = 0.9, col = "grey95") {
+  rect(x - w / 2, y - h / 2, x + w / 2, y + h / 2, col = col, border = "grey30")
+  text(x, y, label, cex = 0.75)
+}
+arr <- function(x0, y0, x1, y1) arrows(x0, y0, x1, y1, length = 0.08, col = "grey30")
+box_(5, 10.3, "Data: outcome, treatment, candidate biomarkers", w = 6)
+box_(2.6, 8.7, "Resample h = 1..q:\n63.2% training / 36.8% test", w = 4)
+box_(2.6, 7.2, "Prescreening on the training part:\ntop-k interaction tests", w = 4)
+box_(2.6, 5.7, "Genetic algorithm (s sub-populations):\nbest subgroup of the training part", w = 4)
+box_(2.6, 4.2, "Effect ratio r*_h in the test part;\nbiomarkers used", w = 4)
+box_(7.6, 6.45, "Decision rule\nmean r* < 1 and mean r* <= (1 - eta) r ?\nbiomarkers with frequency >= theta ?",
+     w = 4.2, h = 1.3, col = "lightyellow")
+box_(7.6, 3.9, "Final search on all data:\ns isolated sub-populations,\nselected biomarkers", w = 4.2, h = 1.2)
+box_(7.6, 1.7, "Subgroup: simplified rule,\ntreatment effects, interaction", w = 4.2, col = "honeydew")
+box_(2.6, 1.7, "No subgroup", w = 2.4, col = "mistyrose")
+arr(4.2, 9.85, 3.2, 9.15); arr(2.6, 8.25, 2.6, 7.65); arr(2.6, 6.75, 2.6, 6.15)
+arr(2.6, 5.25, 2.6, 4.65); arr(4.6, 4.4, 5.5, 6.0)
+arr(7.6, 5.8, 7.6, 4.5); arr(7.6, 3.3, 7.6, 2.15)
+arr(5.5, 6.2, 3.3, 2.15)
+text(4.5, 3.1, "no", cex = 0.75); text(7.85, 5.2, "yes", cex = 0.75)
+par(op)
+```
+
+# Installation
+
+SIGA depends on the genetic algorithm toolbox **gatbxr** (version 0.2.0 or
+later), and on **survival** and **mvtnorm** from CRAN. Until both packages are
+on CRAN they are installed from GitHub:
+
+```{r, eval = FALSE}
+install.packages("remotes")
+remotes::install_github("drizztxx/gatbxr")
+remotes::install_github("drizztxx/SIGA", build_vignettes = TRUE)
+```
+
+The optional package **randomForestSRC** enables the random forest
+prescreening (`screen = "rf"`). Parallel computing (`n_cores > 1`) uses the
+**parallel** package that comes with R; it works on all operating systems,
+including Windows. The vignettes reproduce the chapters of this manual:
+
+```{r, eval = FALSE}
+browseVignettes("SIGA")
+```
+
+# Getting started
+
+```{r, results = "asis", echo = FALSE}
+child("SIGA.Rmd")
+```
+
+# The SIGA method
+
+```{r, results = "asis", echo = FALSE}
+child("siga-method.Rmd")
+```
+
+# Binary and continuous endpoints
+
+```{r, results = "asis", echo = FALSE}
+child("siga-endpoints.Rmd")
+```
+
+# Function reference
+
+| Function | Purpose | Main arguments |
+|---|---|---|
+| `siga()` | complete SIGA procedure | `formula`, `data`, `control_arm`, `direction`, `eta`, `theta`, `n_resample`, `resample_subpop`, `screen`, `n_candidates`, `control`, `n_cores`, `seed` |
+| `update()` | new `eta` / `theta` for a `siga` fit | `object`, `eta`, `theta` |
+| `siga_search()` | genetic algorithm search only | `formula`, `data`, `control`, `n_cores`, `seed` |
+| `siga_screen()` | prescreening of candidate biomarkers | `formula`, `data`, `method`, `n_candidates` |
+| `siga_control()` | genetic algorithm settings | `pop_size`, `max_gen`, `n_subpop`, `ggap`, `min_size`, `objective` |
+| `siga_cv()` | k-fold cross-validation | `formula`, `data`, `k`, `repeats`, `...` (passed to `siga()`) |
+| `subgroup_effect()` | effects in subgroup and complement | `object`, `data` |
+| `predict()` | subgroup membership | `object`, `newdata` |
+| `plot()` | `"frequency"`, `"resamples"`, `"convergence"`, `"effect"` | `x`, `type` |
+| `summary()`, `print()` | reports | |
+| `format()`, `rule_members()`, `rule_variables()` | subgroup rules | `x`, `style`, `digits`, `data` |
+| `siga_simulate()` | data from the simulation models of the paper | `n`, `model`, `endpoint`, `n_noise`, `legacy`, `seed` |
+| `siga_true_subgroup()` | true subgroup of the simulation models | `data`, `model` |
+
+The formula has the form `outcome ~ treatment | predictors`: the outcome is
+`Surv(time, status)`, a binary variable or a numeric variable; the treatment
+variable has two values (`control_arm` sets the control); the predictors are
+column names separated by `+`, or `.` for all remaining columns. The help
+pages (e.g. `?siga`) document every argument and returned component.
+
+**Output of `siga()`.** The fit contains, among others, `subgroup` (was a
+subgroup identified?), `rule` (the subgroup), `decision` (mean held-out effect
+ratio, threshold, selected biomarkers and the reason for "no subgroup"),
+`resamples` (one row per resample), `frequency` (selection frequency of every
+biomarker), `screening` (prescreening of the complete data), `final` (the
+final search, including the best subgroup of each sub-population) and
+`effects` (treatment effects in the subgroup and its complement).
+
+# Reproducing the simulation study
+
+```{r, results = "asis", echo = FALSE}
+child("siga-simulation.Rmd")
+```
+
+```{r, child = "validation-chapter.Rmd"}
+```
