@@ -1,0 +1,10 @@
+[2026-10-30 00:22:03] tte (default resampling): 1200 trials to run on 11 cores (cache %LOCALAPPDATA%/SIGA-validation/tte)
+Error in unserialize(socklist[[n]]) : error reading from connection
+Calls: <Anonymous> ... recvOneData -> recvOneData.SOCKcluster -> unserialize
+Execution halted
+[2026-10-30 11:49:56] tte (default resampling, q = 100): 756 trials to run on 8 cores (cache %LOCALAPPDATA%/SIGA-validation/tte)
+Error in unserialize(socklist[[n]]) : error reading from connection
+Calls: <Anonymous> ... recvOneData -> recvOneData.SOCKcluster -> unserialize
+Execution halted
+[2026-10-30 12:52:01] tte (default resampling, q = 100, legacy data): 644 trials to run on 8 cores (cache %LOCALAPPDATA%/SIGA-validation/tte)
+[2026-10-30 14:26:27] done: mean 70.1 s per trial

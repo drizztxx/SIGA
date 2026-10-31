@@ -1,0 +1,6 @@
+Datasets: 50 (x4 and x5 both among the 10 candidates in 41)
+Median log10 p of best subgroup: original -5.35, package -5.27, true subgroup -4.88
+Package subgroup at least as good (p_new <= p_old): 31 of 50
+Best subgroup contains x4 and x5: original 8, package 11
+Best subgroup uses exactly x4 and x5: original 1, package 4
+Mean time per run: original 18.3 s, package 0.51 s (36 x faster)

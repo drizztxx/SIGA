@@ -1,0 +1,26 @@
+---
+title: "Validation of the SIGA R package"
+date: "`r format(Sys.Date(), '%d %B %Y')`"
+output:
+  html_document:
+    toc: true
+    number_sections: true
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+```
+
+This report summarises the validation of SIGA `r as.character(packageVersion("SIGA"))`
+against the original SIGA code (`legacy/`) and the results published in the
+SIGA paper. See `README.md` for the scripts. The numbers in parentheses are the
+published values.
+
+```{r, child = "../manual/validation-chapter.Rmd"}
+```
+
+# Session information
+
+```{r, echo = TRUE}
+sessionInfo()
+```

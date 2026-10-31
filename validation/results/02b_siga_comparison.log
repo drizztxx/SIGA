@@ -1,0 +1,160 @@
+[2026-10-30 22:59:02] 16 of 32 datasets to run with the original code on 4 workers
+[2026-10-31 00:40:25] done: mean 1497 s per dataset
+   method model rep resamples test_over_overall vars_per_rule min_freq_predictive max_freq_noise    selected found     final   all exact
+ original    B4   1        10             0.648           4.0                 0.4            0.4       x5 x6  TRUE     x5 x6 FALSE FALSE
+  package    B4   1        10             0.723           4.1                 0.2            0.4       x1 x6  TRUE     x1 x6 FALSE FALSE
+ original    B1   1        10             0.639           3.3                 0.9            0.7       x4 x7  TRUE     x4 x7  TRUE FALSE
+  package    B1   1        10             0.506           3.5                 1.0            0.6   x16 x4 x7  TRUE     x4 x7  TRUE FALSE
+ original    B4   2        10             0.484           4.0                 0.5            0.2    x1 x5 x6  TRUE  x1 x5 x6  TRUE  TRUE
+  package    B4   2        10             0.404           3.4                 0.6            0.3    x1 x5 x6  TRUE  x1 x5 x6  TRUE  TRUE
+ original    B1   2        10             0.357           3.2                 0.9            0.4          x4  TRUE        x4  TRUE  TRUE
+  package    B1   2        10             0.324           3.6                 1.0            0.4          x4  TRUE        x4  TRUE  TRUE
+ original    B4   3        10             0.536           4.0                 0.2            0.5   x15 x5 x6  TRUE x15 x5 x6 FALSE FALSE
+  package    B4   3        10             0.451           4.2                 0.2            0.8   x15 x5 x6  TRUE x15 x5 x6 FALSE FALSE
+ original    B1   3        10             0.297           2.6                 1.0            0.3          x4  TRUE        x4  TRUE  TRUE
+  package    B1   3        10             0.357           2.8                 1.0            0.4          x4  TRUE        x4  TRUE  TRUE
+ original    B4   4        10             0.448           3.5                 0.5            0.5 x1 x3 x5 x6  TRUE  x3 x5 x6 FALSE FALSE
+  package    B4   4        10             0.497           4.3                 0.3            0.5    x3 x5 x6  TRUE  x3 x5 x6 FALSE FALSE
+ original    B1   4        10             0.437           3.4                 0.9            0.4          x4  TRUE        x4  TRUE  TRUE
+  package    B1   4        10             0.548           3.0                 1.0            0.5      x17 x4  TRUE    x17 x4  TRUE FALSE
+ original    B4   5        10             0.532           3.8                 0.2            0.4       x5 x6  TRUE     x5 x6 FALSE FALSE
+  package    B4   5        10             0.513           3.3                 0.3            0.4       x5 x6  TRUE     x5 x6 FALSE FALSE
+ original    B1   5        10             0.781           3.0                 0.8            0.3          x4  TRUE        x4  TRUE  TRUE
+  package    B1   5        10             0.589           3.1                 0.9            0.3          x4  TRUE        x4  TRUE  TRUE
+ original    B4   6        10             0.467           3.9                 0.4            0.3       x5 x6  TRUE     x5 x6 FALSE FALSE
+  package    B4   6        10             0.302           4.0                 0.8            0.3    x1 x5 x6  TRUE  x1 x5 x6  TRUE  TRUE
+ original    B1   6        10             1.101           3.5                 0.7            0.7      x10 x4 FALSE           FALSE FALSE
+  package    B1   6        10             0.973           3.4                 0.6            0.4          x4 FALSE           FALSE FALSE
+ original    B4   7        10             0.495           3.6                 0.0            0.4       x5 x6  TRUE     x5 x6 FALSE FALSE
+  package    B4   7        10             0.613           3.6                 0.2            0.4       x5 x6  TRUE     x5 x6 FALSE FALSE
+ original    B1   7        10             0.521           3.3                 1.0            0.3          x4  TRUE        x4  TRUE  TRUE
+  package    B1   7        10             0.483           2.8                 0.9            0.5      x12 x4  TRUE    x12 x4  TRUE FALSE
+ original    B4   8        10             0.970           3.4                 0.1            0.6         x12 FALSE           FALSE FALSE
+  package    B4   8        10             0.881           3.8                 0.2            0.3          x6 FALSE           FALSE FALSE
+ original    B1   8        10             0.445           2.7                 0.9            0.3          x4  TRUE        x4  TRUE  TRUE
+  package    B1   8        10             0.404           3.6                 0.9            0.5       x4 x8  TRUE     x4 x8  TRUE FALSE
+ original    B1   9        10             0.468           3.5                 1.0            0.5   x12 x3 x4  TRUE    x12 x4  TRUE FALSE
+  package    B1   9        10             0.370           2.6                 1.0            0.5      x12 x4  TRUE    x12 x4  TRUE FALSE
+ original    B1  10        10             0.321           3.1                 0.9            0.4          x4  TRUE        x4  TRUE  TRUE
+  package    B1  10        10             0.361           3.3                 1.0            0.4          x4  TRUE        x4  TRUE  TRUE
+ original    B1  11        10             0.169           3.0                 1.0            0.3          x4  TRUE        x4  TRUE  TRUE
+  package    B1  11        10             0.220           2.7                 1.0            0.5      x14 x4  TRUE    x14 x4  TRUE FALSE
+ original    B1  12        10             0.542           2.8                 0.9            0.3          x4  TRUE        x4  TRUE  TRUE
+  package    B1  12        10             0.404           2.7                 0.9            0.6       x1 x4  TRUE     x1 x4  TRUE FALSE
+ original    B1  13        10             0.523           2.9                 0.8            0.3          x4  TRUE        x4  TRUE  TRUE
+  package    B1  13        10             0.528           2.7                 0.9            0.5      x11 x4  TRUE    x11 x4  TRUE FALSE
+ original    B1  14        10             0.680           3.0                 0.9            0.4          x4  TRUE        x4  TRUE  TRUE
+  package    B1  14        10             0.575           2.8                 0.9            0.4          x4  TRUE        x4  TRUE  TRUE
+ original    B1  15        10             0.714           3.0                 0.8            0.3          x4  TRUE        x4  TRUE  TRUE
+  package    B1  15        10             0.421           2.8                 0.8            0.5      x15 x4  TRUE    x15 x4  TRUE FALSE
+ original    B1  16        10             0.383           2.6                 1.0            0.4          x4  TRUE        x4  TRUE  TRUE
+  package    B1  16        10             0.432           2.8                 1.0            0.3          x4  TRUE        x4  TRUE  TRUE
+ original    B1  17        10             0.605           2.8                 0.8            0.3          x4  TRUE        x4  TRUE  TRUE
+  package    B1  17        10             0.496           2.1                 1.0            0.2          x4  TRUE        x4  TRUE  TRUE
+ original    B1  18        10             0.634           2.6                 0.9            0.3          x4  TRUE        x4  TRUE  TRUE
+  package    B1  18        10             0.252           2.7                 1.0            0.4          x4  TRUE        x4  TRUE  TRUE
+ original    B1  19        10             0.363           3.1                 0.9            0.6       x3 x4  TRUE     x3 x4  TRUE FALSE
+  package    B1  19        10             0.413           2.5                 1.0            0.5       x3 x4  TRUE     x3 x4  TRUE FALSE
+ original    B1  20        10             0.585           2.9                 1.0            0.7       x4 x8  TRUE     x4 x8  TRUE FALSE
+  package    B1  20        10             0.478           2.2                 1.0            0.4          x4  TRUE        x4  TRUE  TRUE
+ original    B1  21        10             0.393           3.1                 1.0            0.5       x1 x4  TRUE     x1 x4  TRUE FALSE
+  package    B1  21        10             0.301           2.5                 1.0            0.5       x4 x8  TRUE     x4 x8  TRUE FALSE
+ original    B1  22        10             0.179           2.3                 1.0            0.3          x4  TRUE        x4  TRUE  TRUE
+  package    B1  22        10             0.451           2.6                 1.0            0.4          x4  TRUE        x4  TRUE  TRUE
+ original    B1  23        10             1.141           3.9                 0.6            0.7    x4 x7 x9 FALSE           FALSE FALSE
+  package    B1  23        10             0.623           4.1                 0.4            0.5         x13  TRUE       x13 FALSE FALSE
+ original    B1  24        10             0.452           3.1                 0.8            0.4          x4  TRUE        x4  TRUE  TRUE
+  package    B1  24        10             0.348           2.3                 0.9            0.3          x4  TRUE        x4  TRUE  TRUE
+
+Means over the datasets (all / exact: proportion of datasets whose final rule uses all / exactly the predictive biomarkers):
+ model   method test_over_overall vars_per_rule min_freq_predictive max_freq_noise found   all exact datasets same_decision
+    B1 original             0.530          3.03               0.892          0.421 0.917 0.917 0.708       24         0.958
+    B4 original             0.573          3.77               0.288          0.412 0.875 0.125 0.125        8         1.000
+    B1  package             0.452          2.88               0.921          0.438 0.958 0.917 0.458       24         0.958
+    B4  package             0.548          3.84               0.350          0.425 0.875 0.250 0.250        8         1.000
+
+## summary rerun with the package seed runs
+[2026-10-31 00:54:03] 0 of 32 datasets to run with the original code on 4 workers
+   method model rep resamples test_over_overall vars_per_rule min_freq_predictive max_freq_noise    selected found     final   all exact
+ original    B4   1        10             0.648           4.0                 0.4            0.4       x5 x6  TRUE     x5 x6 FALSE FALSE
+  package    B4   1        10             0.723           4.1                 0.2            0.4       x1 x6  TRUE     x1 x6 FALSE FALSE
+ original    B1   1        10             0.639           3.3                 0.9            0.7       x4 x7  TRUE     x4 x7  TRUE FALSE
+  package    B1   1        10             0.506           3.5                 1.0            0.6   x16 x4 x7  TRUE     x4 x7  TRUE FALSE
+ original    B4   2        10             0.484           4.0                 0.5            0.2    x1 x5 x6  TRUE  x1 x5 x6  TRUE  TRUE
+  package    B4   2        10             0.404           3.4                 0.6            0.3    x1 x5 x6  TRUE  x1 x5 x6  TRUE  TRUE
+ original    B1   2        10             0.357           3.2                 0.9            0.4          x4  TRUE        x4  TRUE  TRUE
+  package    B1   2        10             0.324           3.6                 1.0            0.4          x4  TRUE        x4  TRUE  TRUE
+ original    B4   3        10             0.536           4.0                 0.2            0.5   x15 x5 x6  TRUE x15 x5 x6 FALSE FALSE
+  package    B4   3        10             0.451           4.2                 0.2            0.8   x15 x5 x6  TRUE x15 x5 x6 FALSE FALSE
+ original    B1   3        10             0.297           2.6                 1.0            0.3          x4  TRUE        x4  TRUE  TRUE
+  package    B1   3        10             0.357           2.8                 1.0            0.4          x4  TRUE        x4  TRUE  TRUE
+ original    B4   4        10             0.448           3.5                 0.5            0.5 x1 x3 x5 x6  TRUE  x3 x5 x6 FALSE FALSE
+  package    B4   4        10             0.497           4.3                 0.3            0.5    x3 x5 x6  TRUE  x3 x5 x6 FALSE FALSE
+ original    B1   4        10             0.437           3.4                 0.9            0.4          x4  TRUE        x4  TRUE  TRUE
+  package    B1   4        10             0.548           3.0                 1.0            0.5      x17 x4  TRUE    x17 x4  TRUE FALSE
+ original    B4   5        10             0.532           3.8                 0.2            0.4       x5 x6  TRUE     x5 x6 FALSE FALSE
+  package    B4   5        10             0.513           3.3                 0.3            0.4       x5 x6  TRUE     x5 x6 FALSE FALSE
+ original    B1   5        10             0.781           3.0                 0.8            0.3          x4  TRUE        x4  TRUE  TRUE
+  package    B1   5        10             0.589           3.1                 0.9            0.3          x4  TRUE        x4  TRUE  TRUE
+ original    B4   6        10             0.467           3.9                 0.4            0.3       x5 x6  TRUE     x5 x6 FALSE FALSE
+  package    B4   6        10             0.302           4.0                 0.8            0.3    x1 x5 x6  TRUE  x1 x5 x6  TRUE  TRUE
+ original    B1   6        10             1.101           3.5                 0.7            0.7      x10 x4 FALSE           FALSE FALSE
+  package    B1   6        10             0.973           3.4                 0.6            0.4          x4 FALSE           FALSE FALSE
+ original    B4   7        10             0.495           3.6                 0.0            0.4       x5 x6  TRUE     x5 x6 FALSE FALSE
+  package    B4   7        10             0.613           3.6                 0.2            0.4       x5 x6  TRUE     x5 x6 FALSE FALSE
+ original    B1   7        10             0.521           3.3                 1.0            0.3          x4  TRUE        x4  TRUE  TRUE
+  package    B1   7        10             0.483           2.8                 0.9            0.5      x12 x4  TRUE    x12 x4  TRUE FALSE
+ original    B4   8        10             0.970           3.4                 0.1            0.6         x12 FALSE           FALSE FALSE
+  package    B4   8        10             0.881           3.8                 0.2            0.3          x6 FALSE           FALSE FALSE
+ original    B1   8        10             0.445           2.7                 0.9            0.3          x4  TRUE        x4  TRUE  TRUE
+  package    B1   8        10             0.404           3.6                 0.9            0.5       x4 x8  TRUE     x4 x8  TRUE FALSE
+ original    B1   9        10             0.468           3.5                 1.0            0.5   x12 x3 x4  TRUE    x12 x4  TRUE FALSE
+  package    B1   9        10             0.370           2.6                 1.0            0.5      x12 x4  TRUE    x12 x4  TRUE FALSE
+ original    B1  10        10             0.321           3.1                 0.9            0.4          x4  TRUE        x4  TRUE  TRUE
+  package    B1  10        10             0.361           3.3                 1.0            0.4          x4  TRUE        x4  TRUE  TRUE
+ original    B1  11        10             0.169           3.0                 1.0            0.3          x4  TRUE        x4  TRUE  TRUE
+  package    B1  11        10             0.220           2.7                 1.0            0.5      x14 x4  TRUE    x14 x4  TRUE FALSE
+ original    B1  12        10             0.542           2.8                 0.9            0.3          x4  TRUE        x4  TRUE  TRUE
+  package    B1  12        10             0.404           2.7                 0.9            0.6       x1 x4  TRUE     x1 x4  TRUE FALSE
+ original    B1  13        10             0.523           2.9                 0.8            0.3          x4  TRUE        x4  TRUE  TRUE
+  package    B1  13        10             0.528           2.7                 0.9            0.5      x11 x4  TRUE    x11 x4  TRUE FALSE
+ original    B1  14        10             0.680           3.0                 0.9            0.4          x4  TRUE        x4  TRUE  TRUE
+  package    B1  14        10             0.575           2.8                 0.9            0.4          x4  TRUE        x4  TRUE  TRUE
+ original    B1  15        10             0.714           3.0                 0.8            0.3          x4  TRUE        x4  TRUE  TRUE
+  package    B1  15        10             0.421           2.8                 0.8            0.5      x15 x4  TRUE    x15 x4  TRUE FALSE
+ original    B1  16        10             0.383           2.6                 1.0            0.4          x4  TRUE        x4  TRUE  TRUE
+  package    B1  16        10             0.432           2.8                 1.0            0.3          x4  TRUE        x4  TRUE  TRUE
+ original    B1  17        10             0.605           2.8                 0.8            0.3          x4  TRUE        x4  TRUE  TRUE
+  package    B1  17        10             0.496           2.1                 1.0            0.2          x4  TRUE        x4  TRUE  TRUE
+ original    B1  18        10             0.634           2.6                 0.9            0.3          x4  TRUE        x4  TRUE  TRUE
+  package    B1  18        10             0.252           2.7                 1.0            0.4          x4  TRUE        x4  TRUE  TRUE
+ original    B1  19        10             0.363           3.1                 0.9            0.6       x3 x4  TRUE     x3 x4  TRUE FALSE
+  package    B1  19        10             0.413           2.5                 1.0            0.5       x3 x4  TRUE     x3 x4  TRUE FALSE
+ original    B1  20        10             0.585           2.9                 1.0            0.7       x4 x8  TRUE     x4 x8  TRUE FALSE
+  package    B1  20        10             0.478           2.2                 1.0            0.4          x4  TRUE        x4  TRUE  TRUE
+ original    B1  21        10             0.393           3.1                 1.0            0.5       x1 x4  TRUE     x1 x4  TRUE FALSE
+  package    B1  21        10             0.301           2.5                 1.0            0.5       x4 x8  TRUE     x4 x8  TRUE FALSE
+ original    B1  22        10             0.179           2.3                 1.0            0.3          x4  TRUE        x4  TRUE  TRUE
+  package    B1  22        10             0.451           2.6                 1.0            0.4          x4  TRUE        x4  TRUE  TRUE
+ original    B1  23        10             1.141           3.9                 0.6            0.7    x4 x7 x9 FALSE           FALSE FALSE
+  package    B1  23        10             0.623           4.1                 0.4            0.5         x13  TRUE       x13 FALSE FALSE
+ original    B1  24        10             0.452           3.1                 0.8            0.4          x4  TRUE        x4  TRUE  TRUE
+  package    B1  24        10             0.348           2.3                 0.9            0.3          x4  TRUE        x4  TRUE  TRUE
+
+Means over the datasets (all / exact: proportion of datasets whose final rule uses all / exactly the predictive biomarkers):
+ model   method test_over_overall vars_per_rule min_freq_predictive max_freq_noise found   all exact datasets same_decision
+    B1 original             0.530          3.03               0.892          0.421 0.917 0.917 0.708       24         0.958
+    B4 original             0.573          3.77               0.288          0.412 0.875 0.125 0.125        8         1.000
+    B1  package             0.452          2.88               0.921          0.438 0.958 0.917 0.458       24         0.958
+    B4  package             0.548          3.84               0.350          0.425 0.875 0.250 0.250        8         1.000
+
+Datasets whose final rule is exactly the predictive biomarkers with one code only:
+ model original_only package_only p_value
+    B1             7            1    0.07
+    B4             0            1    1.00
+
+Package on the B1 datasets with three further resampling seeds (proportions):
+ k found   all exact
+ 1 1.000 1.000 0.708
+ 2 0.958 0.958 0.708
+ 3 0.958 0.958 0.667

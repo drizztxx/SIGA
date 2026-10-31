@@ -1,0 +1,2 @@
+[2026-10-30 15:57:52] continuous (default resampling, q = 100): 360 trials to run on 8 cores (cache %LOCALAPPDATA%/SIGA-validation/continuous)
+[2026-10-30 16:25:49] done: mean 36.9 s per trial

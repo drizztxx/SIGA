@@ -1,0 +1,2 @@
+[2026-10-30 22:45:04] tte (s = 5, q = 10, exact resampling, proper data): 1200 trials to run on 8 cores (cache %LOCALAPPDATA%/SIGA-validation/tte)
+[2026-10-31 00:06:03] done: mean 32.3 s per trial

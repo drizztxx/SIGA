@@ -1,0 +1,2 @@
+[2026-10-30 11:07:56] tte (legacy resampling, q = 10): 600 trials to run on 8 cores (cache %LOCALAPPDATA%/SIGA-validation/tte_legacy_q10)
+[2026-10-30 11:49:55] done: mean 33.3 s per trial

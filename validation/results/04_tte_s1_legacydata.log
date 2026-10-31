@@ -1,0 +1,4 @@
+[2026-10-30 10:41:07] tte (default resampling, q = 10): 1200 trials to run on 8 cores (cache %LOCALAPPDATA%/SIGA-validation/tte_q10)
+[2026-10-30 10:57:03] relaunch on fixed SIGA build (private library)
+[2026-10-30 10:57:04] tte (default resampling, q = 10): 587 trials to run on 8 cores (cache %LOCALAPPDATA%/SIGA-validation/tte_q10)
+[2026-10-30 11:07:54] done: mean 8.8 s per trial

@@ -1,0 +1,67 @@
+[default, seed 1] mean test HR 0.691; selected: egfr_ihc_prop, egfr_ihc_intense; subgroup: egfr_ihc_intense <= 1 & egfr_ihc_prop <= 60 (0.8 min)
+[default, seed 2] mean test HR 0.705; selected: egfr_ihc_prop; subgroup: egfr_ihc_prop <= 25 (0.8 min)
+[default, seed 3] mean test HR 0.672; selected: egfr_ihc_prop, egfr_ihc_intense; subgroup: egfr_ihc_intense <= 1 & egfr_ihc_prop <= 60 (0.8 min)
+[bernoulli, seed 1] mean test HR 0.711; selected: egfr_ihc_prop; subgroup: no subgroup (0.7 min)
+[bernoulli, seed 2] mean test HR 0.700; selected: egfr_ihc_prop; subgroup: egfr_ihc_prop <= 25 (0.8 min)
+[bernoulli, seed 3] mean test HR 0.692; selected: egfr_ihc_prop; subgroup: egfr_ihc_prop <= 25 (0.8 min)
+[one_subpop, seed 1] mean test HR 0.688; selected: ; subgroup: no subgroup (0.2 min)
+[one_subpop, seed 2] mean test HR 0.725; selected: ; subgroup: no subgroup (0.2 min)
+[one_subpop, seed 3] mean test HR 0.695; selected: ; subgroup: no subgroup (0.2 min)
+[default_q10, seed 1] mean test HR 0.717; selected: egfr_ihc_prop, egfr_ihc_intense; subgroup: no subgroup (0.2 min)
+[default_q10, seed 2] mean test HR 0.734; selected: egfr_ihc_prop; subgroup: no subgroup (0.2 min)
+[default_q10, seed 3] mean test HR 0.710; selected: egfr_ihc_intense, egfr_ihc_prop; subgroup: no subgroup (0.2 min)
+[default_q10, seed 4] mean test HR 0.533; selected: egfr_ihc_intense, egfr_ihc_prop; subgroup: egfr_ihc_intense <= 1 & egfr_ihc_prop <= 60 (0.2 min)
+[default_q10, seed 5] mean test HR 0.814; selected: egfr_ihc_intense, egfr_ihc_prop; subgroup: no subgroup (0.2 min)
+[default_q10, seed 6] mean test HR 0.624; selected: egfr_ihc_intense, egfr_ihc_prop; subgroup: egfr_ihc_intense <= 1 & egfr_ihc_prop <= 60 (0.2 min)
+[default_q10, seed 7] mean test HR 0.703; selected: egfr_ihc_intense; subgroup: egfr_ihc_intense <= 1 (0.2 min)
+[default_q10, seed 8] mean test HR 0.695; selected: egfr_ex18_719, egfr_ihc_intense; subgroup: egfr_ex18_719 <= 0 & egfr_ihc_intense <= 1 (0.2 min)
+[default_q10, seed 9] mean test HR 0.625; selected: egfr_ihc_prop; subgroup: egfr_ihc_prop <= 25 (0.3 min)
+[default_q10, seed 10] mean test HR 0.805; selected: ; subgroup: no subgroup (0.2 min)
+
+Original code (stored result):
+ overall_hr mean_test_hr                       selected
+  0.9449516    0.7005675 egfr_ihc_intense egfr_ihc_prop
+                                        subgroup
+ (egfr_ihc_intense <= 1) & (egfr_ihc_prop <= 60)
+
+SIGA package:
+      config seed overall_hr mean_test_hr                       selected
+     default    1      0.945        0.691 egfr_ihc_prop egfr_ihc_intense
+     default    2      0.945        0.705                  egfr_ihc_prop
+     default    3      0.945        0.672 egfr_ihc_prop egfr_ihc_intense
+   bernoulli    1      0.945        0.711                  egfr_ihc_prop
+   bernoulli    2      0.945        0.700                  egfr_ihc_prop
+   bernoulli    3      0.945        0.692                  egfr_ihc_prop
+  one_subpop    1      0.945        0.688                               
+  one_subpop    2      0.945        0.725                               
+  one_subpop    3      0.945        0.695                               
+ default_q10    1      0.945        0.717 egfr_ihc_prop egfr_ihc_intense
+ default_q10    2      0.945        0.734                  egfr_ihc_prop
+ default_q10    3      0.945        0.710 egfr_ihc_intense egfr_ihc_prop
+ default_q10    4      0.945        0.533 egfr_ihc_intense egfr_ihc_prop
+ default_q10    5      0.945        0.814 egfr_ihc_intense egfr_ihc_prop
+ default_q10    6      0.945        0.624 egfr_ihc_intense egfr_ihc_prop
+ default_q10    7      0.945        0.703               egfr_ihc_intense
+ default_q10    8      0.945        0.695 egfr_ex18_719 egfr_ihc_intense
+ default_q10    9      0.945        0.625                  egfr_ihc_prop
+ default_q10   10      0.945        0.805                               
+                                    subgroup hr_subgroup
+ egfr_ihc_intense <= 1 & egfr_ihc_prop <= 60       0.509
+                         egfr_ihc_prop <= 25       0.549
+ egfr_ihc_intense <= 1 & egfr_ihc_prop <= 60       0.509
+                                 no subgroup          NA
+                         egfr_ihc_prop <= 25       0.549
+                         egfr_ihc_prop <= 25       0.549
+                                 no subgroup          NA
+                                 no subgroup          NA
+                                 no subgroup          NA
+                                 no subgroup          NA
+                                 no subgroup          NA
+                                 no subgroup          NA
+ egfr_ihc_intense <= 1 & egfr_ihc_prop <= 60       0.509
+                                 no subgroup          NA
+ egfr_ihc_intense <= 1 & egfr_ihc_prop <= 60       0.509
+                       egfr_ihc_intense <= 1       0.544
+  egfr_ex18_719 <= 0 & egfr_ihc_intense <= 1       0.487
+                         egfr_ihc_prop <= 25       0.549
+                                 no subgroup          NA
