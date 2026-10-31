@@ -1,0 +1,48 @@
+Package: SIGA
+Type: Package
+Title: Subgroup Identification Based on a Genetic Algorithm
+Version: 0.1.0
+Authors@R:
+    person("Liang", "Zhao", email = "wethenwethen@gmail.com",
+           role = c("aut", "cre", "cph"))
+Description: Identifies subgroups of patients with an enhanced treatment
+    effect in two-arm randomised clinical trials with the SIGA method
+    (subgroup identification based on a genetic algorithm) of Zhao et al.
+    (2024) <doi:10.1080/10543406.2023.2170397>. Candidate
+    subgroups are encoded as real-valued chromosomes whose genes define
+    biomarker thresholds or level sets, are scored by the
+    treatment-by-subgroup interaction p-value, and evolve with the
+    selection, recombination and mutation operators of the 'gatbxr'
+    toolbox in several isolated sub-populations. A resampling scheme
+    controls multiplicity (false subgroup discovery) and complexity (noise
+    biomarkers). Time-to-event, binary and continuous endpoints are
+    supported, together with biomarker prescreening, cross-validation,
+    parallel computing and the simulation models used to evaluate the
+    method.
+License: MIT + file LICENSE
+URL: https://github.com/drizztxx/SIGA
+BugReports: https://github.com/drizztxx/SIGA/issues
+Depends:
+    R (>= 4.0.0)
+Imports:
+    gatbxr (>= 0.2.0),
+    graphics,
+    grDevices,
+    mvtnorm,
+    parallel,
+    stats,
+    survival,
+    utils
+Suggests:
+    knitr,
+    randomForestSRC,
+    rmarkdown,
+    testthat (>= 3.0.0)
+Remotes:
+    drizztxx/gatbxr
+VignetteBuilder: knitr
+Config/testthat/edition: 3
+Encoding: UTF-8
+Language: en-GB
+Roxygen: list(markdown = TRUE)
+Config/roxygen2/version: 8.1.1

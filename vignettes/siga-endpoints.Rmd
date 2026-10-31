@@ -1,0 +1,113 @@
+---
+title: "Binary and continuous endpoints"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Binary and continuous endpoints}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", fig.width = 7, fig.height = 4)
+```
+
+SIGA was developed for censored survival data, but only the model behind the
+objective function, the prescreening test and the treatment effect measure
+depend on the endpoint. The package supports three endpoints with the same
+interface; the endpoint is detected from the outcome in the formula.
+
+| Endpoint | Outcome | Objective and prescreening | Effect | Effect ratio $r$ for $\eta$ |
+|---|---|---|---|---|
+| time-to-event | `Surv(time, status)` | Cox model | hazard ratio | HR |
+| binary | logical, 2-level factor, 0/1 | logistic model | odds ratio | 1 / OR |
+| continuous | numeric | linear model ($t$ / F test) | mean difference | $\exp(-\pi d/\sqrt 3)$ |
+
+```{r}
+library(SIGA)
+```
+
+## Binary endpoints
+
+For a binary outcome the event level is `TRUE`, 1, or the second level of a
+factor. By default a *higher* probability of the event is beneficial (for
+example a response); for an adverse event use `direction = "lower"`.
+`siga_simulate(endpoint = "binary")` uses the linear predictors of the paper on
+the logit scale. In model B1 the subgroup $x_4 > 1$ has an odds ratio of
+$e^2 \approx 7.4$, and the treatment has no effect elsewhere. A binary outcome
+carries less information than a survival time, so larger samples are needed
+for the same effect size; here we use 600 patients.
+
+```{r}
+db <- siga_simulate(600, model = "B1", endpoint = "binary", seed = 9)
+table(response = db$y, arm = db$trt)
+fb <- siga(y ~ trt | ., data = db, seed = 1)
+fb
+```
+
+The effect ratio used by the multiplicity rule is the odds ratio of the
+*non*-event, $1/\mathrm{OR}$, so that, as for hazard ratios, lower values mean
+more benefit and $\eta$ is the required relative improvement. For binary
+endpoints the default is $\eta = 0.25$ instead of 0.2. In the simulations of
+the validation chapter of the user manual the false discovery rate with
+$\eta = 0.2$ was 8.5% for binary endpoints, against 5% to 6% for
+time-to-event and continuous endpoints, and $\theta = 0.7$ hardly reduced it.
+With $\eta = 0.25$ it was 5% to 6%.
+
+## Continuous endpoints
+
+For continuous outcomes the objective is the one-sided $t$-test p-value of the
+treatment-by-subgroup interaction in the linear model
+$E(Y) = \mu + \alpha I + \beta Z + \gamma Z I$, and the prescreening uses the F
+test of the interaction. By default a *higher* mean is beneficial; for
+outcomes such as pain scores use `direction = "lower"`.
+
+In the continuous version of model B3 the outcome is $y = L + \varepsilon$ with
+$\varepsilon \sim N(0, 1.5^2)$, so the treatment increases the mean by 2 in the
+subgroup $x_4 > 1, x_5 = 1$.
+
+```{r}
+dc <- siga_simulate(600, model = "B3", endpoint = "continuous", sigma = 1.5, seed = 8)
+fc <- siga(y ~ trt | ., data = dc, seed = 1)
+fc
+```
+
+The multiplicity rule needs a ratio. SIGA converts the standardised mean
+difference $d = \Delta / s$ ($s$ = pooled within-arm standard deviation of the
+complete data) into the log odds ratio $\pi d / \sqrt 3$ of the logistic
+approximation and uses $r = \exp(-\pi d / \sqrt 3)$. With $\eta = 0.2$, the
+held-out subgroups must improve the standardised effect by
+$-\log(0.8)\sqrt 3/\pi \approx 0.12$ standard deviations over the overall
+effect. The treatment effects themselves are reported as mean differences:
+
+```{r}
+if (fc$subgroup) subgroup_effect(fc)
+```
+
+## Reversing the direction
+
+`direction` reverses the benefit direction for any endpoint. With
+`direction = "lower"` the continuous outcome above is treated as one where
+lower values are better, so SIGA looks for patients in whom the
+treatment *lowers* the outcome:
+
+```{r}
+fl <- siga_search(y ~ trt | x1 + x4 + x5, data = dc, direction = "lower", seed = 1,
+                  control = siga_control(n_subpop = 2))
+fl$effects$interaction$estimate   # difference of mean differences (subgroup - complement)
+```
+
+## Custom objective functions
+
+Any objective can be plugged into the genetic algorithm with
+`siga_control(objective = f)`, where
+`f(y, trt, subgroup, endpoint)` returns a number (smaller is better). The
+minimum subgroup size rule is applied before `f` is called. For example, the
+negative mean difference in the subgroup:
+
+```{r}
+neg_diff <- function(y, trt, subgroup, endpoint)
+  -(mean(y[subgroup & trt == 1]) - mean(y[subgroup & trt == 0]))
+fs <- siga_search(y ~ trt | x1 + x4 + x5, data = dc, seed = 1,
+                  control = siga_control(objective = neg_diff, n_subpop = 2))
+fs$rule
+```

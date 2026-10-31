@@ -1,0 +1,99 @@
+---
+title: "Reproducing the simulation study"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Reproducing the simulation study}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+```
+
+```{r}
+library(SIGA)
+```
+
+## Simulation models
+
+The simulation study of the SIGA paper (section 3) uses six models with 20
+covariates and a binary treatment $Z$: two null models without a predictive
+subgroup and four models with one.
+
+| Model | Linear predictor $L$ | Prognostic | Predictive | True subgroup |
+|---|---|---|---|---|
+| A1 | $0$ | none | none | none |
+| A2 | $2(x_1 + x_2)$ | $x_1, x_2$ | none | none |
+| B1 | $0.1(x_1 + x_2) + 2 Z I(x_4 > 1)$ | $x_1, x_2$ | $x_4$ | $x_4 > 1$ |
+| B2 | $0.2(x_1 + x_2) + 1.2 Z I(x_1 > 0)$ | $x_1, x_2$ | $x_1$ | $x_1 > 0$ |
+| B3 | $0.3(x_2 + x_9) + 2 Z I(x_4 > 1, x_5 = 1)$ | $x_2, x_9$ | $x_4, x_5$ | $x_4 > 1, x_5 = 1$ |
+| B4 | $2 Z I(x_1 < 0.5, x_5 = 1, x_6 = 1)$ | none | $x_1, x_5, x_6$ | $x_1 < 0.5, x_5 = 1, x_6 = 1$ |
+
+Survival times follow $T = 1.2\,(-\log U \, e^{L})^{1/4.34}$, so that the hazard
+is proportional to $e^{-L}$ (a hazard ratio of $e^{-2} \approx 0.14$ in the B1
+subgroup), and censoring times are uniform on $(0, \pi)$ with the values of
+$\pi$ of the paper that give 30% censoring. `siga_simulate()` generates these
+data; `siga_true_subgroup()` gives the true subgroup membership.
+
+```{r}
+d <- siga_simulate(600, model = "B4", seed = 1)
+c(censoring = mean(d$status == 0), true_subgroup = mean(attr(d, "true_subgroup")))
+```
+
+The observed time is $\min(T, C)$, as described in the paper. `legacy = TRUE`
+reproduces the original simulation program exactly for a given seed, including
+two details that differ from the paper: the noise covariates
+$x_{11}, \dots, x_{20}$ have pairwise correlation 0.5 within the block
+(`noise_rho`), and the event time is stored as the observed time of censored
+patients (the event indicator is correct). Censored patients then stay in the
+risk sets until their event time. The Cox model remains valid, because
+censoring does not depend on the covariates, but the risk sets are larger,
+which can change the operating characteristics of SIGA. The validation chapter
+of the user manual therefore uses proper censoring and compares the results
+with those on data from the original program.
+
+## Performance criteria
+
+For every trial a training set $L_1$ ($n = 300$ or 600) and a test set $L_2$
+($n = 5000$) are generated. SIGA is applied to $L_1$, and the subgroup found
+is evaluated as follows:
+
+* **false discovery rate** (A1, A2): proportion of trials with a subgroup;
+* $p_{one}$, $p_{all}$, $p_{exact}$: probability that the subgroup uses at least
+  one, all, or exactly the predictive biomarkers, given that a subgroup is
+  found;
+* **sensitivity, specificity, AUC**: classification of the $L_2$ patients into
+  the true subgroup (AUC = (sensitivity + specificity) / 2 for a rule);
+* subgroup proportion in $L_2$, hazard ratio of the subgroup in $L_1$ and in
+  $L_2$, and the relative bias $(\hat\tau_{L_1} - \hat\tau_{L_2}) / \hat\tau_{L_2}$.
+
+## Running a trial
+
+One trial with the settings of the simulation study of the paper, which are
+the package defaults (20 covariates, $k = 10$ candidates, $q = 10$ resamples,
+$m = 50$, $MaxG = 50$ and $s = 5$ sub-populations in every resample and in the
+final search):
+
+```{r, eval = FALSE}
+one_trial <- function(model, n, seed) {
+  L1 <- siga_simulate(n, model, seed = seed)
+  L2 <- siga_simulate(5000, model, seed = seed + 5)
+  fit <- siga(Surv(time, status) ~ trt | ., data = L1, eta = 0.2, theta = 0.5,
+              seed = seed, verbose = FALSE)
+  if (!fit$subgroup) return(c(found = 0))
+  pred <- predict(fit, L2)
+  truth <- attr(L2, "true_subgroup")
+  vars <- rule_variables(fit$rule)
+  c(found = 1, all = all(attr(L1, "predictive") %in% vars),
+    se = mean(pred[truth]), sp = mean(!pred[!truth]),
+    hr_L2 = subgroup_effect(fit, data = L2)$table$estimate[2])
+}
+one_trial("B3", 300, seed = 1)
+```
+
+The validation scripts in the `validation/` directory of the source repository
+run all scenarios in parallel (one resampling per trial, re-used for the nine
+combinations of $\eta \in \{0.15, 0.2, 0.25\}$ and $\theta \in \{0.5, 0.7, 0.9\}$
+with `update()`) and compare the results with Tables 3 to 6 of the paper. A
+trial takes about half a minute on one core.

@@ -1,0 +1,278 @@
+---
+title: "The SIGA method"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{The SIGA method}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+```
+
+This vignette describes the SIGA procedure as implemented in the package, how
+its parameters map to the notation of the SIGA paper (Zhao et al.), and where
+the package differs from the original code.
+
+## 1. Setting
+
+Consider a two-arm randomised trial with treatment indicator $Z$ (1 =
+experimental, 0 = control), an outcome $Y$ and $p$ baseline predictors
+$X_1, \dots, X_p$. A subgroup $G$ is defined by conditions on some predictors,
+for example $\{X_4 > 1\} \cap \{X_5 = 1\}$. $G$ is *predictive* if the
+treatment effect in $G$ is larger than in its complement $\bar G$, and the
+predictors in its definition are *predictive biomarkers*. SIGA searches for the
+predictive subgroup with the strongest evidence of an enhanced treatment
+effect, while controlling
+
+* **multiplicity**: the risk of reporting a subgroup when no predictive
+  subgroup exists, and
+* **complexity**: the risk of including noise variables in the subgroup
+  definition.
+
+| Endpoint | Outcome in the formula | Model | Treatment effect |
+|---|---|---|---|
+| time-to-event | `Surv(time, status)` | Cox proportional hazards | hazard ratio (HR) |
+| binary | logical, 2-level factor or 0/1 | logistic regression | odds ratio (OR) |
+| continuous | numeric | linear regression | mean difference |
+
+The argument `direction` states which direction is beneficial: a *lower*
+hazard (default for time-to-event), a *higher* probability of the event level
+(default for binary; the event level is `TRUE`, 1 or the second factor level)
+or a *higher* mean (default for continuous).
+
+## 2. Candidate prescreening
+
+To focus the search on predictors that may interact with the treatment, every
+predictor $X_j$ is tested in the model with $Z$, $X_j$ and $Z X_j$, e.g. for
+time-to-event data
+$$h(t) = h_0(t) \exp(\alpha_j X_j + \beta_j Z + \gamma_j Z X_j).$$
+The predictors are ranked by the likelihood-ratio test of $\gamma_j = 0$
+(F test for continuous endpoints) and the top $k$ are kept (`n_candidates`).
+The paper recommends $k = \lceil p/2 \rceil$ for $p \le 20$ and $k = 10$
+otherwise, the package default. Categorical predictors enter as dummy
+variables and ordinal predictors with their level codes. `screen = "rf"`
+ranks predictors by the difference of random forest variable importance
+between the arms instead, and `screen = "none"` keeps all predictors.
+Prescreening is repeated in every resample (section 5).
+
+## 3. Genetic representation of subgroups
+
+A candidate subgroup (an *individual*) is a vector of $k$ real-valued genes
+$B_j \in [0, 4]$, one per candidate predictor. The initial population draws the
+genes uniformly. A gene is decoded as follows.
+
+| Gene value | Numeric or ordinal $X_j$ | Binary $X_j$ | Categorical $X_j$ with $c$ levels |
+|---|---|---|---|
+| $B_j \le 2$ | not used | not used | not used |
+| $2 < B_j \le 3$ | $X_j \le P_{B_j - 2}(X_j)$ | $X_j$ = first level | $X_j \in C_s$, $s = \lceil (B_j - 2)(2^c - 2)/2 \rceil$ |
+| $3 < B_j \le 4$ | $X_j \ge P_{B_j - 3}(X_j)$ | $X_j$ = second level | (same) |
+
+$P_u(X_j)$ is the type-7 sample quantile of $X_j$ at probability $u$, and
+$C_1, \dots, C_{2^c - 2}$ are the non-empty proper subsets of the levels,
+ordered by size and then lexicographically. Every predictor is therefore used
+with probability 1/2. The conditions of the used genes are combined with AND.
+Patients with a missing value of a used predictor do not belong to the
+subgroup. Categorical predictors may have at most 10 levels.
+
+Predictor types are taken from the data: numeric columns are numeric, ordered
+factors ordinal, and factors, logical or character columns binary or
+categorical. Use `predictor_types` to override, e.g.
+`predictor_types = c(stage = "ordinal")`. A 0/1-coded numeric column is
+treated as numeric, which is equivalent to a binary split but is less
+efficient; code categorical variables as factors.
+
+## 4. Objective function and genetic operators
+
+**Objective.** With $I$ the indicator of membership of the candidate subgroup,
+SIGA fits
+$$h(t) = h_0(t) \exp(\alpha I + \beta Z + \gamma Z I)$$
+(logistic or linear regression with the same terms for the other endpoints)
+and uses the one-sided p-value of the interaction $\gamma$ in the direction of
+a larger benefit in the subgroup as the objective to be minimised
+(`objective = "interaction"`). A subgroup smaller than $MinS$ (`min_size`,
+default 10%) gets the worst value 1. As in the original code, the size of a
+subgroup is measured by $2 \min(n_1, n_0)$, the numbers of treated and control
+patients in the subgroup. Alternatives are `"subgroup"` (p-value of the
+treatment effect in the subgroup, set to 1 when the complement has a smaller
+p-value), `"differential"` (difference of the Wald statistics in subgroup and
+complement) and user-defined functions (see `?siga_control`).
+
+**Operators.** Every generation applies the operators of the Sheffield Genetic
+Algorithm Toolbox (package **gatbxr**):
+
+1. *fitness assignment* by linear ranking with selective pressure 2
+   (`ranking`): the best individual has twice the average selection
+   probability;
+2. *selection* of $GGAP \times m$ parents by stochastic universal sampling
+   (`sus`; generation gap `ggap`, default 0.9);
+3. *line recombination* of consecutive pairs of selected parents
+   (`reclin`): offspring gene $= P_1 + \alpha (P_2 - P_1)$ with one
+   $\alpha \sim U(-0.25, 1.25)$ per pair;
+4. *mutation* with the breeder genetic algorithm operator (`mutbga`), mutation
+   rate $1/k$;
+5. *reinsertion*: the offspring replace the worst parents (`reins`), so the
+   best individuals always survive (elitism).
+
+The search stops after $MaxG$ generations (`max_gen`, default 50) with
+populations of $m$ individuals (`pop_size`, default 50). To avoid premature
+convergence, $s$ isolated sub-populations (`n_subpop`, default 5) evolve
+independently. The fittest individual over all generations and sub-populations
+defines the subgroup; ties are broken by the larger subgroup and then by the
+simpler rule.
+
+**Reported rule.** Thresholds are replaced by the boundary values observed in
+the subgroup (for example $X \le 60$ instead of the interpolated percentile
+62.5), and conditions that do not change the membership are removed. The
+membership in the data is unchanged.
+
+## 5. Resampling: multiplicity and complexity control
+
+A genetic algorithm always returns a "fittest" subgroup, even without a true
+predictive subgroup. SIGA therefore embeds the search in a resampling scheme:
+
+1. Draw $q$ (`n_resample`, default 10) training subsamples $D_h$ of 63.2% of
+   the patients without replacement (`resample_prop`; `resample_method =
+   "bernoulli"` draws every patient independently with probability 0.632 as in
+   the original code). The remaining 36.8% form the test sets $D_{-h}$.
+2. In every $D_h$, prescreen the predictors and run the genetic algorithm with
+   `resample_subpop` sub-populations (by default as many as in the final
+   search, 5). Evaluate the best subgroup by its treatment effect ratio $r^*_h$
+   in $D_{-h}$, and record the predictors it uses.
+3. Let $r$ be the effect ratio of the complete data and
+   $\bar r^* = \frac{1}{q} \sum_h r^*_h$. SIGA reports **no subgroup** unless
+   $$\bar r^* < 1 \quad \text{and} \quad \bar r^* \le (1 - \eta)\, r,$$
+   i.e. unless the subgroups found in the training subsamples improve the
+   treatment effect in new patients by at least $100\eta\%$ (`eta`).
+   Only predictors used by the best subgroups of at least a proportion
+   $\theta$ of the resamples are kept (`theta`); without such a predictor,
+   SIGA also reports no subgroup.
+4. Otherwise the multi-population search is run on the complete data with the
+   kept predictors.
+
+**Effect ratios.** $r$ is a ratio for which lower values indicate more benefit:
+
+| Endpoint | Effect ratio $r$ |
+|---|---|
+| time-to-event | hazard ratio (as in the paper) |
+| binary | $1/\mathrm{OR}$, the odds ratio of the non-event |
+| continuous | $\exp(-\pi d / \sqrt{3})$, $d$ = mean difference / pooled SD |
+
+For continuous endpoints $d$ is the standardised mean difference (with the
+pooled standard deviation of the complete data) and $\pi d / \sqrt 3$ the
+corresponding log odds ratio under the logistic approximation, so that $\eta$
+has the same interpretation for all endpoints. With $\eta = 0.2$ the
+standardised effect must improve by about 0.12 standard deviations. In a test
+set $r^*_h$ is set to 1 when the subgroup or its complement is empty, and to
+missing when it is not estimable or extreme ($r^*_h > 100$ or $< 0.001$).
+
+**Number of resamples.** The paper recommends $q = 100$; the default
+$q = 10$ is that of the original code. With it the package reproduces the
+false discovery rates of the simulation study of the paper, on which the
+recommended $\eta$ and $\theta$ are based (see the validation chapter of the
+user manual). Without a predictive subgroup the held-out ratios $r^*_h$ are on
+average 10% to 20% larger than $r$ (a subgroup that looks better than average
+in the training part tends to look worse in the complementary test part), so
+false discoveries occur when $\bar r^*$ is low by chance. Its variance, and
+with it the false discovery rate, decreases with $q$: with $\eta = 0.2$ and
+$\theta = 0.5$ the rate in the null models of the paper is about 6% for
+$q = 10$ (higher with 300 than with 600 patients) and close to 0 for
+$q = 100$, which needs $\eta \approx 0.05$ for a comparable rate. With
+$q = 10$ the decision for a given data set can depend on the seed; repeat the
+analysis with a few seeds, or use more resamples with a smaller $\eta$, before
+relying on a borderline result.
+
+**Search effort per resample.** The paper describes a single sub-population
+per resample, whereas the original code ran as many sub-populations as the
+final search, which is the default (`resample_subpop = control$n_subpop`).
+More search effort per resample finds the predictive biomarkers more
+consistently, which increases their selection frequencies and improves the
+held-out effects. In model B1 of the paper with 300 patients, for example,
+the biomarker $X_4$ was used by 67% of the resampled subgroups with one and by
+91% with five sub-populations, and the mean held-out hazard ratio relative to
+the overall one fell from 0.68 to 0.55. `resample_subpop = 1` makes the
+resampling about five times faster.
+
+**Re-using the resampling.** The decision depends on $\eta$ and $\theta$ only
+through $\bar r^*$ and the selection frequencies, so `update(fit, eta, theta)`
+re-applies the rule without repeating the resampling. Because the random number
+streams of the final search are fixed by the seed, the result equals a new call
+of `siga()` with the same seed.
+
+## 6. Recommended settings
+
+| Parameter | Argument | Default | Recommendation (paper) |
+|---|---|---|---|
+| candidates $k$ | `n_candidates` | $\lceil p/2\rceil$ / 10 | $\lceil p/2\rceil$ if $p \le 20$, else 10 |
+| population size $m$ | `siga_control(pop_size)` | 50 | 50 |
+| generations $MaxG$ | `siga_control(max_gen)` | 50 | 50 |
+| sub-populations $s$ | `siga_control(n_subpop)` | 5 | 5 |
+| generation gap | `siga_control(ggap)` | 0.9 | 0.8 to 1 |
+| minimum size $MinS$ | `siga_control(min_size)` | 0.1 | 0.1 |
+| resamples $q$ | `n_resample` | 10 | 100 (10 in the simulations) |
+| sub-populations per resample | `resample_subpop` | `n_subpop` | 1 (5 in the simulations) |
+| multiplicity $\eta$ | `eta` | 0.2 (binary: 0.25) | 0.15 weak, 0.2 moderate, 0.25 strict |
+| complexity $\theta$ | `theta` | 0.5 | 0.5 weak, 0.7 moderate, 0.9 strict |
+
+In the simulations of the paper (and with the package defaults) $\eta = 0.2$
+kept the false subgroup discovery rate around 5% (for binary endpoints it was
+8.5% in the validation simulations, also with $\theta = 0.7$, and 5% to 6%
+with $\eta = 0.25$, the default for binary endpoints), and $\theta = 0.5$ gave the
+best balance between detecting all predictive biomarkers and excluding noise
+variables. Large $\theta$ (e.g. 0.9)
+tends to keep only one biomarker. The settings can be compared with
+`siga_cv()`.
+
+SIGA is an exploratory method: the multiplicity control is not a strong
+(family-wise) control, and subgroups should be confirmed in independent data
+or a subsequent trial.
+
+## 7. Differences from the original code
+
+The genetic algorithm reproduces the original implementation operator by
+operator: with the same objective values and random seed, the best objective
+value of every generation is identical (see the validation report). The
+following points differ.
+
+* **Bug fixes.** (i) A single continuous predictor used in one direction took
+  its threshold from the pooled quantiles of all numeric candidates. (ii) A
+  single binary factor produced an empty subgroup (`x == ''`). (iii) A single
+  categorical factor stopped the search when several were candidates, and
+  factors with exactly three levels could only define single-level subsets.
+  (iv) The binary prescreening used the deviance instead of the p-value and
+  kept the least predictive predictors. (v) The best-subgroup summary could
+  produce vacuous conditions `x >= a | x <= b`. (vi) The last generation was
+  ignored when choosing the best individual.
+* **Objective scale.** The original code used the two-sided interaction
+  p-value, replaced by $1 - p$ for harmful interactions with $p < 0.5$. The
+  package uses the one-sided p-value. For beneficial interactions the
+  ranking of the subgroups, and hence the search, is the same.
+* **Resampling.** As in the original code, every resample runs `n_subpop`
+  sub-populations (the paper describes one), but exactly 63.2% of the patients
+  are drawn, as described in the paper; the original code drew every patient
+  independently with probability 0.632 (`resample_method = "bernoulli"`).
+* **Thresholds.** The upper condition is $X \ge P$ (the paper writes $X > P$),
+  which matters for ordinal predictors.
+* **Simulation program.** The original program used the event time as the
+  observed time of censored patients (the event indicator is correct).
+  `siga_simulate()` uses $\min(T, C)$ by default; `legacy = TRUE` reproduces
+  the original data exactly. The noise covariates $X_{11}$ to $X_{20}$ were
+  generated with pairwise correlation 0.5 (`noise_rho`).
+
+## References
+
+Zhao L, Zhang W, Wu Y, Cao L, Wang L, Li K (2024). A promising subgroup
+identification method based on a genetic algorithm for censored survival data.
+*Journal of Biopharmaceutical Statistics* 34(1), 55--77.
+<https://doi.org/10.1080/10543406.2023.2170397>
+
+Chipperfield A, Fleming P, Pohlheim H, Fonseca C (1994). *Genetic Algorithm
+Toolbox for use with MATLAB*. University of Sheffield.
+
+Mühlenbein H, Schlierkamp-Voosen D (1993). The science of breeding and its
+application to the breeder genetic algorithm (BGA). *Evolutionary Computation*
+1(4), 335--360.
+
+Chinn S (2000). A simple method for converting an odds ratio to effect size
+for use in meta-analysis. *Statistics in Medicine* 19(22), 3127--3131.

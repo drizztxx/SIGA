@@ -1,0 +1,17 @@
+bibentry(
+  bibtype = "Article",
+  title = "A promising subgroup identification method based on a genetic algorithm for censored survival data",
+  author = c(person("Liang", "Zhao"), person("Wenjie", "Zhang"), person("Ying", "Wu"),
+             person("Lei", "Cao"), person("Liuying", "Wang"), person("Kang", "Li")),
+  journal = "Journal of Biopharmaceutical Statistics",
+  year = "2024",
+  volume = "34",
+  number = "1",
+  pages = "55--77",
+  doi = "10.1080/10543406.2023.2170397",
+  textVersion = paste(
+    "Zhao L, Zhang W, Wu Y, Cao L, Wang L, Li K (2024).",
+    "A promising subgroup identification method based on a genetic algorithm",
+    "for censored survival data. Journal of Biopharmaceutical Statistics 34(1), 55-77.",
+    "doi:10.1080/10543406.2023.2170397")
+)

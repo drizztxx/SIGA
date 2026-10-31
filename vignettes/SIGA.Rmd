@@ -1,0 +1,160 @@
+---
+title: "Getting started with SIGA"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Getting started with SIGA}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", fig.width = 7, fig.height = 4.5)
+```
+
+SIGA (*subgroup identification based on a genetic algorithm*) looks for a
+subgroup of patients with an enhanced treatment effect in a two-arm
+randomised trial. This vignette walks through a complete analysis of
+simulated time-to-event data. The method itself is described in
+`vignette("siga-method")`.
+
+```{r}
+library(SIGA)
+```
+
+## Data
+
+The data must contain the outcome, a treatment variable with two values and
+the candidate predictors (numeric, ordered factors, factors, logical or
+character). We use model B3 of the SIGA paper: 300 patients, 20 covariates,
+30% censoring, and a predictive subgroup $x_4 > 1$ and $x_5 = 1$ in which the
+experimental treatment reduces the hazard substantially, plus the prognostic
+covariates $x_2$ and $x_9$.
+
+```{r}
+dat <- siga_simulate(300, model = "B3", seed = 2024)
+dim(dat)
+head(dat[, 1:8])
+mean(attr(dat, "true_subgroup"))   # proportion of patients in the true subgroup
+```
+
+The model is written as `outcome ~ treatment | predictors`. The predictors
+can be listed (`x1 + x2`), or `.` uses every other column (`. - id` excludes
+`id`). Here `trt` is coded 0/1, so 0 is the control arm; for other codings set
+`control_arm`, e.g. `control_arm = "placebo"`.
+
+## Prescreening
+
+`siga_screen()` shows which predictors interact with the treatment. SIGA
+repeats this step inside every resample and keeps the top
+$k = \lceil 20/2 \rceil = 10$ candidates.
+
+```{r}
+siga_screen(Surv(time, status) ~ trt | ., data = dat)
+```
+
+## Running SIGA
+
+`siga()` runs the complete procedure. The defaults are the recommended
+settings: `eta = 0.2` (0.25 for binary endpoints), `theta = 0.5`, 10 resamples, and a genetic algorithm
+with 50 individuals, 50 generations and 5 sub-populations (`siga_control()`)
+in every resample and in the final search. The analysis of 300 patients takes
+about 20 seconds on one core; `n_cores` distributes the resamples over several
+cores.
+
+```{r}
+fit <- siga(Surv(time, status) ~ trt | ., data = dat, eta = 0.2, theta = 0.5, seed = 1)
+fit
+```
+
+The printout gives the overall hazard ratio, the mean hazard ratio of the
+subgroups found in the resamples when applied to the held-out patients, the
+threshold $(1 - \eta) \times$ overall hazard ratio, the selection frequency of
+the predictors, and — if a subgroup is identified — its definition and the
+treatment effects in the subgroup and its complement. `summary()` adds the
+prescreening of the complete data, the distribution of the held-out effects
+and the best subgroup of each sub-population of the final search.
+
+```{r}
+summary(fit)
+```
+
+## Plots
+
+```{r, fig.height = 4}
+plot(fit, "frequency")   # selection frequency of the predictors, with theta
+plot(fit, "resamples")   # held-out hazard ratios of the resampled subgroups
+```
+
+```{r, fig.height = 4}
+plot(fit, "effect")      # Kaplan-Meier curves by arm in the subgroup and complement
+plot(fit, "convergence") # best objective value per generation and sub-population
+```
+
+## Other tuning parameters without recomputation
+
+The decision rule only depends on the stored resampling results, so `update()`
+changes `eta` (multiplicity control) and `theta` (complexity control) without
+repeating the resampling. The result is the same as running `siga()` again
+with the same seed. With 10 resamples a borderline decision can depend on the
+seed, so it is worth repeating an analysis with a few seeds (see
+`vignette("siga-method")`).
+
+```{r}
+update(fit, eta = 0.25, theta = 0.7)
+```
+
+## Applying the subgroup to new patients
+
+`predict()` returns the subgroup membership and `subgroup_effect()` estimates
+the treatment effects, for instance in an independent validation set:
+
+```{r}
+new <- siga_simulate(2000, model = "B3", seed = 99)
+table(predicted = predict(fit, new), true = attr(new, "true_subgroup"))
+subgroup_effect(fit, data = new)
+```
+
+The rule can also be used as R code, e.g. with `subset()`:
+
+```{r}
+fit$rule
+format(fit$rule, style = "R")
+```
+
+## Cross-validation
+
+`siga_cv()` estimates how well the procedure generalises by running it on
+the training part of every fold and evaluating the subgroup on the held-out
+fold (the paper used 100 repetitions of 5-fold cross-validation). It can also
+be used to compare tuning parameters. Each fold runs a complete `siga()`, so
+this is the most expensive function; use `n_cores`.
+
+```{r, eval = FALSE}
+cv <- siga_cv(Surv(time, status) ~ trt | ., data = dat, k = 5, repeats = 20,
+              eta = 0.2, theta = 0.5, n_cores = 8, seed = 1)
+summary(cv)
+```
+
+## Genetic algorithm search only
+
+`siga_search()` runs only the genetic algorithm on given predictors, without
+prescreening and resampling. Its result is always the best subgroup of the
+search and is therefore optimistic; use it for exploration.
+
+```{r}
+s <- siga_search(Surv(time, status) ~ trt | x2 + x4 + x5 + x9, data = dat, seed = 1)
+s
+```
+
+## Reproducibility and parallel computing
+
+Every resample, sub-population and cross-validation fold has its own random
+number stream derived from `seed`. Results are identical for any number of
+cores, and `set.seed()` before the call has the same effect as `seed`.
+Parallel computing (`n_cores > 1`) starts background R processes, which
+requires the package to be installed (not only loaded with `devtools`).
+
+```{r, eval = FALSE}
+fit4 <- siga(Surv(time, status) ~ trt | ., data = dat, seed = 1, n_cores = 4)
+identical(fit4$resamples, fit$resamples)   # TRUE
+```

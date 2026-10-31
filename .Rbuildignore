@@ -1,0 +1,13 @@
+^.*\.Rproj$
+^\.Rproj\.user$
+^LICENSE\.md$
+^README\.Rmd$
+^\.github$
+^legacy$
+^validation$
+^data-raw$
+^manual$
+^cran-comments\.md$
+^\.gitattributes$
+^doc$
+^Meta$
