@@ -170,8 +170,9 @@ missing when it is not estimable or extreme ($r^*_h > 100$ or $< 0.001$).
 **Number of resamples.** The paper recommends $q = 100$; the default
 $q = 10$ is that of the original code. With it the package reproduces the
 false discovery rates of the simulation study of the paper, on which the
-recommended $\eta$ and $\theta$ are based (see the validation chapter of the
-user manual). Without a predictive subgroup the held-out ratios $r^*_h$ are on
+recommended $\eta$ and $\theta$ are based (see the validation report in the
+`validation/` directory of the source repository). Without a predictive
+subgroup the held-out ratios $r^*_h$ are on
 average 10% to 20% larger than $r$ (a subgroup that looks better than average
 in the training part tends to look worse in the complementary test part), so
 false discoveries occur when $\bar r^*$ is low by chance. Its variance, and

@@ -1,5 +1,5 @@
 ```{r validation-setup, include = FALSE}
-vroot <- file.path("..", "validation")
+vroot <- "."
 source(file.path(vroot, "R", "report_helpers.R"))
 res_dir <- file.path(vroot, "results")
 rd <- function(f) { p <- file.path(res_dir, f); if (file.exists(p)) readRDS(p) else NULL }

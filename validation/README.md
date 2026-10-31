@@ -16,7 +16,7 @@ processes that load the installed package).
 | V5 | `04_simulation.R endpoint=tte R=100 cores=8` | simulation study of the paper (Tables 3 to 6), 100 trials per scenario | 1.5 h on 8 cores |
 | V6 | `04_simulation.R endpoint=continuous R=100 cores=8`, `04_simulation.R endpoint=binary R=100 cores=8` | the same models for the binary and continuous endpoints | 3 h on 8 cores (continuous 50 min, binary 2 h) |
 | | `05_summarise.R` | tables of V5/V6 compared with the published values (`paper_tables.csv`); for runs with 100 resamples, the decisions with fewer resamples | < 1 min |
-| | `06_report.Rmd` | validation report | < 1 min |
+| | `06_report.Rmd` | validation report (text and tables in `validation-chapter.Rmd`) | < 1 min |
 
 `04_simulation.R` uses the package defaults (`s=5` sub-populations per
 resample, `q=10` resamples, `method=exact` sampling of 63.2% of the patients)
@@ -24,7 +24,7 @@ and time-to-event data with the observed time min(T, C) (`sim=proper`). Other
 settings are run with, e.g., `s=1`, `q=100`, `method=bernoulli` (sampling of the
 original code) or `sim=legacy` (original simulation program) and are stored
 under their own label (e.g. `tte_s1_q100_legacydata`). The comparison of
-settings in the report and the manual uses
+settings in the report uses
 
     Rscript 04_simulation.R endpoint=tte R=50 method=bernoulli
     Rscript 04_simulation.R endpoint=tte R=50 method=bernoulli sim=legacy

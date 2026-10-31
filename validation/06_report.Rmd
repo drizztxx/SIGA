@@ -16,7 +16,7 @@ against the original SIGA code (`legacy/`) and the results published in the
 SIGA paper. See `README.md` for the scripts. The numbers in parentheses are the
 published values.
 
-```{r, child = "../manual/validation-chapter.Rmd"}
+```{r, child = "validation-chapter.Rmd"}
 ```
 
 # Session information

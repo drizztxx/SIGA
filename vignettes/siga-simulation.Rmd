@@ -49,9 +49,10 @@ $x_{11}, \dots, x_{20}$ have pairwise correlation 0.5 within the block
 patients (the event indicator is correct). Censored patients then stay in the
 risk sets until their event time. The Cox model remains valid, because
 censoring does not depend on the covariates, but the risk sets are larger,
-which can change the operating characteristics of SIGA. The validation chapter
-of the user manual therefore uses proper censoring and compares the results
-with those on data from the original program.
+which can change the operating characteristics of SIGA. The validation of the
+package (report in the `validation/` directory of the source repository)
+therefore uses proper censoring and compares the results with those on data
+from the original program.
 
 ## Performance criteria
 

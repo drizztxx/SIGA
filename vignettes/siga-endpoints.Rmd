@@ -47,8 +47,9 @@ fb
 The effect ratio used by the multiplicity rule is the odds ratio of the
 *non*-event, $1/\mathrm{OR}$, so that, as for hazard ratios, lower values mean
 more benefit and $\eta$ is the required relative improvement. For binary
-endpoints the default is $\eta = 0.25$ instead of 0.2. In the simulations of
-the validation chapter of the user manual the false discovery rate with
+endpoints the default is $\eta = 0.25$ instead of 0.2. In the validation
+simulations (validation report in the `validation/` directory of the source
+repository) the false discovery rate with
 $\eta = 0.2$ was 8.5% for binary endpoints, against 5% to 6% for
 time-to-event and continuous endpoints, and $\theta = 0.7$ hardly reduced it.
 With $\eta = 0.25$ it was 5% to 6%.

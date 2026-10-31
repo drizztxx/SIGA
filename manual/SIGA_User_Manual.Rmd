@@ -172,6 +172,3 @@ final search, including the best subgroup of each sub-population) and
 ```{r, results = "asis", echo = FALSE}
 child("siga-simulation.Rmd")
 ```
-
-```{r, child = "validation-chapter.Rmd"}
-```
